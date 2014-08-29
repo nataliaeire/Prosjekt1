@@ -17,6 +17,7 @@ int main()
     double start, finish, operation_time, relative_error;
 
     // Creating a file to write the results to
+
     ofstream myfile;
     myfile.open("tekstfil_prosjekt1.dat");
     myfile.setf(ios::scientific);               // Forcing scientific notation
