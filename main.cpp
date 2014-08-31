@@ -7,23 +7,26 @@
 using namespace std;
 using namespace arma;
 
-
 vec tridiagonal_matrix(vec &a, vec &b, vec &c, vec &f, int n);
 void create_vectors(int n, vec &a, vec &b, vec &c, vec &f, vec &u_real);
 
 int main()
 {
-    int n_exponent, n;
-    double start, finish, operation_time, relative_error;
+    int n_exponent;
+    double start, finish, operation_time, relative_error, n;
 
-    // Creating a file to write the results to
+    // Creating a file to write the time and error to
+    ofstream timeanderror;
+    timeanderror.open("timeanderror.dat");
+    timeanderror.setf(ios::scientific);         // Forcing scientific notation
 
-    ofstream myfile;
-    myfile.open("tekstfil_prosjekt1.dat");
-    myfile.setf(ios::scientific);               // Forcing scientific notation
+    // Creating a file to write the found function values to
+    ofstream uvalues;
+    uvalues.open("uvalues.dat");
+    uvalues.setf(ios::scientific);              // Forcing scientific notation
 
     // Creating for-loop to try the solving mechanism for different size matrices
-    for(n_exponent=1; n_exponent<8; n_exponent++){
+    for(n_exponent=1; n_exponent < 8; n_exponent++){
 
         n = pow(10,n_exponent);                 // Dimension of matrix
         vec a, b, c, f, u_real;                 // Please see create_vectors for explanation
@@ -38,19 +41,29 @@ int main()
         operation_time = (finish - start)/(double) CLOCKS_PER_SEC;  // Calculating time in seconds
         relative_error = log10(max(abs((u_real(span(1,n))-u(span(1,n)))/u_real(span(1,n)))));
 
-        // Writing results to file
+        // Writing error and time to file
         if(n_exponent == 1){                    // Setting information about the columns in the first row
-            myfile << setiosflags(ios::showpoint | ios:: uppercase);
-            myfile << setw(10) << setprecision(8) << "n-exponent " << "log10 rel.error" << "time" << endl;
+            timeanderror << setiosflags(ios::showpoint | ios:: uppercase);
+            timeanderror << setw(10) << setprecision(8) << "exponent"
+                         << setw(10) << setprecision(8) << "log10 rel.error"
+                         << setw(10) << setprecision(8) << "time" << endl;
         }
-        myfile << setiosflags(ios::showpoint | ios:: uppercase);
-        myfile << setw(10) << setprecision(8) << n_exponent << " "
-               << setw(10) << setprecision(8) << relative_error << " "
-               << setw(10) << setprecision(8) << operation_time << endl;
+        timeanderror << setiosflags(ios::showpoint | ios:: uppercase);
+        timeanderror << setw(10) << setprecision(8) << n_exponent << " "
+                     << setw(10) << setprecision(8) << relative_error << " "
+                     << setw(10) << setprecision(8) << operation_time << endl;
+
+
+        // Writing found function values to file
+        uvalues << setiosflags(ios::showpoint | ios:: uppercase);
+        uvalues << setw(10) << setprecision(8) << u << endl;
 
     } // End for loop over n values
 
-    myfile.close();
+    // Closing files
+    timeanderror.close();
+    uvalues.close();
+
     return 0;
 
 } // End of program
@@ -127,8 +140,6 @@ vec tridiagonal_matrix(vec &a, vec &b, vec &c, vec &f, int n){
     for(i=n-1; i>0; i--){
         u[i] = (f_new[i]-c[i]*u[i+1])/b_new[i];
     }
-
-    // cout << u << endl;
 
     /* Note that in the special case of a tridiagonal matrix of second dervatives, I could've just set
      * [c-1] = -1, so that b_new[i] = b[i} + factor, as well as u[i] = (f_new[i]+u[i+1])/b_new[i],
