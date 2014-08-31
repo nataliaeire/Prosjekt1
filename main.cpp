@@ -9,11 +9,17 @@ using namespace arma;
 
 vec tridiagonal_matrix(vec &a, vec &b, vec &c, vec &f, int n);
 void create_vectors(int n, vec &a, vec &b, vec &c, vec &f, vec &u_real);
+void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma);
+
+
+/* Indices in create_vectors.. they aren't correct, are they?
+ * What are the correct values for i = 0, i = 1, i = n and i = n+1. */
+
 
 int main()
 {
-    int n_exponent;
-    double start, finish, operation_time, relative_error, n;
+    int n_exponent, n;
+    double start, finish, operation_time, relative_error, start_armadillo, finish_armadillo, operation_time_armadillo;
 
     // Creating a file to write the time and error to
     ofstream timeanderror;
@@ -29,7 +35,7 @@ int main()
     for(n_exponent=1; n_exponent < 8; n_exponent++){
 
         n = pow(10,n_exponent);                 // Dimension of matrix
-        vec a, b, c, f, u_real;                 // Please see create_vectors for explanation
+        vec a, b, c, f, u_real, u_arma;         // Please see sub functions for explanation
         vec u = zeros(n+2);                     // Vector to store the solution of the problem
 
         create_vectors(n, a, b, c, f, u_real);  // Creating vectors for the tridiagonal matrix system
@@ -40,6 +46,14 @@ int main()
 
         operation_time = (finish - start)/(double) CLOCKS_PER_SEC;  // Calculating time in seconds
         relative_error = log10(max(abs((u_real(span(1,n))-u(span(1,n)))/u_real(span(1,n)))));
+
+        // Solving problem using LU-decomposition of the matrix is small
+        if(n_exponent < 2){
+            start_armadillo = clock();
+            armadillo_solve(n, a, b, c, f, u_arma);
+            finish_armadillo = clock();
+            operation_time_armadillo = (finish_armadillo - start_armadillo)/(double) CLOCKS_PER_SEC;
+        }
 
         // Writing error and time to file
         if(n_exponent == 1){                    // Setting information about the columns in the first row
@@ -74,7 +88,7 @@ void create_vectors(int n, vec &a, vec &b, vec &c, vec &f, vec &u_real){
     a.resize(n+2);              // Vector storing elements a_ij (j = i-1) for tridiagonal matrix A
     b.resize(n+2);              // Vector storing elements a_ii           for tridiagonal matrix A
     c.resize(n+2);              // Vector storing elements a_ij (j = i+1) for tridiagonal matrix A
-    f.resize(n+2);              // Vector storing elements in vector f in the problem Ax = f
+    f.resize(n+2);              // Vector storing elements in vector f in the problem Au = f
     u_real.resize(n+2);         // Vector storing the values of the actual solution to the problem
 
     // Filling all elements of the vectors with zeros
@@ -148,3 +162,35 @@ vec tridiagonal_matrix(vec &a, vec &b, vec &c, vec &f, int n){
     return u;
 }
 
+
+void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma){
+
+    mat A = mat(n,n);           // Create full matris from tridiagonal matrix vectors
+    A.zeros();                  // Fill matrix with zeros
+
+    u_arma.resize(n);           // Create solution vector
+    u_arma.zeros();             // Fill elements of solution vector with zeros
+
+    vec f_arma;                 // Create vector f in the problem Au = f
+    f_arma.resize(n);           // Size vector f to the right number of elements
+    f_arma = f(span(1,n));      // Fill elements of f_new with elements of f
+
+    // Assign values to elements of matrix
+    for (int i = 0; i<n; i++){
+        if (i == 0){
+            A(i,i)   = b[i+1];
+            A(i,i+1) = c[i+1];
+        }if (i==n-1){
+            A(i,i)   = b[i+1];
+            A(i,i-1) = a[i+1];
+        }else{
+            A(i,i)   = b[i+1];
+            A(i,i+1) = c[i+1];
+            A(i,i-1) = a[i+1];
+        } // End if statements
+    } // End creating matrix
+
+    cout << A << endl;
+    //u_arma = solve(A,f_arma);
+
+}// End of armadillo_solve-function
