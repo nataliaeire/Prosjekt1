@@ -11,11 +11,6 @@ vec tridiagonal_matrix(vec &a, vec &b, vec &c, vec &f, int n);
 void create_vectors(int n, vec &a, vec &b, vec &c, vec &f, vec &u_real);
 void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma);
 
-
-/* Indices in create_vectors.. they aren't correct, are they?
- * What are the correct values for i = 0, i = 1, i = n and i = n+1. */
-
-
 int main()
 {
     int n_exponent, n;
