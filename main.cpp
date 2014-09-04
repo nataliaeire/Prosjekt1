@@ -19,12 +19,18 @@ void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma);
 int main()
 {
     int n_exponent, n;
-    double start, finish, operation_time, relative_error, start_armadillo, finish_armadillo, operation_time_armadillo;
+    double start, finish, operation_time, relative_error,
+            start_armadillo, finish_armadillo, operation_time_armadillo, relative_error_arma;
 
     // Creating a file to write the time and error to
     ofstream timeanderror;
     timeanderror.open("timeanderror.dat");
     timeanderror.setf(ios::scientific);         // Forcing scientific notation
+
+    // Creating a file to write the time and error to for armadillo solving
+    ofstream timeanderror_arma;
+    timeanderror_arma.open("timeanderror_arma.dat");
+    timeanderror_arma.setf(ios::scientific);         // Forcing scientific notation
 
     // Creating a file to write the found function values to
     ofstream uvalues;
@@ -48,11 +54,18 @@ int main()
         relative_error = log10(max(abs((u_real(span(1,n))-u(span(1,n)))/u_real(span(1,n)))));
 
         // Solving problem using LU-decomposition of the matrix is small
-        if(n_exponent < 2){
+        if(n_exponent < 4){
             start_armadillo = clock();
             armadillo_solve(n, a, b, c, f, u_arma);
             finish_armadillo = clock();
             operation_time_armadillo = (finish_armadillo - start_armadillo)/(double) CLOCKS_PER_SEC;
+            relative_error_arma = log10(max(abs((u_real(span(1,n))-u_arma(span(0,n-1)))/u_real(span(1,n)))));
+
+
+            timeanderror_arma << setiosflags(ios::showpoint | ios:: uppercase);
+            timeanderror_arma << setw(10) << setprecision(8) << n_exponent << " "
+                              << setw(10) << setprecision(8) << relative_error_arma << " "
+                              << setw(10) << setprecision(8) << operation_time_armadillo << endl;
         }
 
         // Writing error and time to file
@@ -66,7 +79,6 @@ int main()
         timeanderror << setw(10) << setprecision(8) << n_exponent << " "
                      << setw(10) << setprecision(8) << relative_error << " "
                      << setw(10) << setprecision(8) << operation_time << endl;
-
 
         // Writing found function values to file
         uvalues << setiosflags(ios::showpoint | ios:: uppercase);
@@ -101,22 +113,20 @@ void create_vectors(int n, vec &a, vec &b, vec &c, vec &f, vec &u_real){
     double h = (1.-0.)/(n+1);   // Step size of variable
 
     // Assign values to the elements of a, b, c
-    for(int i=0; i<=n+1; i++){
+    for(int i=1; i<=n+1; i++){
 
         double x = i*h;         // Variable of functions
 
         if(i == 1){
-            a[i] = 0;
             b[i] = 2;
             c[i] = -1;
             f[i] = h*h*100*exp(-10*x);
-            u_real[i] = 0;
-        }if(i == n+1){
+            u_real[i] = 1-(1-exp(-10))*x - exp(-10*x);
+        }else if(i == n+1){
             a[i] = -1;
             b[i] = 2;
-            c[i] = 0;
             f[i] = h*h*100*exp(-10*x);
-            u_real[i] = 0;
+            u_real[i] = 1-(1-exp(-10))*x - exp(-10*x);
         }else{
             a[i] = -1;
             b[i] = 2;
@@ -162,10 +172,9 @@ vec tridiagonal_matrix(vec &a, vec &b, vec &c, vec &f, int n){
     return u;
 }
 
-
 void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma){
 
-    mat A = mat(n,n);           // Create full matris from tridiagonal matrix vectors
+    mat A(n,n);                 // Create full matris from tridiagonal matrix vectors
     A.zeros();                  // Fill matrix with zeros
 
     u_arma.resize(n);           // Create solution vector
@@ -180,7 +189,7 @@ void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma){
         if (i == 0){
             A(i,i)   = b[i+1];
             A(i,i+1) = c[i+1];
-        }if (i==n-1){
+        }else if (i==n-1){
             A(i,i)   = b[i+1];
             A(i,i-1) = a[i+1];
         }else{
@@ -190,7 +199,6 @@ void armadillo_solve(int n, vec &a, vec &b, vec &c, vec &f, vec &u_arma){
         } // End if statements
     } // End creating matrix
 
-    cout << A << endl;
-    //u_arma = solve(A,f_arma);
+    u_arma = solve(A,f_arma);
 
 }// End of armadillo_solve-function
